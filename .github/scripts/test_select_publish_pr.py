@@ -71,6 +71,8 @@ class SelectionTests(unittest.TestCase):
     def test_only_modified_formula_is_allowed(self):
         for files in ([{"filename": "README.md", "status": "modified"}],
                       [{"filename": ".github/workflows/tests.yml", "status": "modified"}],
+                      [{"filename": FORMULA, "status": "added"}],
+                      [{"filename": FORMULA, "status": "renamed"}],
                       [{"filename": FORMULA, "status": "removed"}], [],
                       self.files + [{"filename": "README.md", "status": "modified"}]):
             with self.subTest(files=files):
