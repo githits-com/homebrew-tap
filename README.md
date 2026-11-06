@@ -8,7 +8,10 @@ brew install githits-com/tap/githits-scan
 
 Homebrew uses a matching bottle when available and otherwise builds from source
 with Homebrew's Rust build dependency. Bottle builds target macOS 15 Apple Silicon
-and Intel, and Linux x86_64 and ARM64.
+and Intel, and Linux x86_64 and ARM64. Intel macOS builds are currently blocked
+because Homebrew's Rust dependency has no compatible bottle: test-bot skips the
+formula, and this tap treats skips as failed checks. Do not publish until all
+required targets have a tested bottle.
 
 ## Maintenance
 

@@ -44,6 +44,7 @@ jobs:
 
       - run: brew test-bot --only-tap-syntax
       - run: brew test-bot --only-formulae
+        id: formulae
         if: github.event_name == 'pull_request'
 
       - name: Upload bottles as artifact
@@ -52,4 +53,7 @@ jobs:
         with:
           name: bottles_${{ matrix.os }}
           path: '*.bottle.*'
-          if-no-files-found: error
+
+      - name: Fail when test-bot skipped a formula
+        if: steps.formulae.outputs.skipped_or_failed_formulae != ''
+        run: exit 1
