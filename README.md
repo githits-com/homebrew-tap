@@ -24,8 +24,10 @@ After it succeeds, the publisher runs automatically **only** when:
 The publisher is triggered directly by `workflow_run`, not by a bot-applied
 label: labels written with `GITHUB_TOKEN` would not trigger another workflow.
 Selection uses read-only API calls and trusted `main` code. The publishing job
-uses the tap's `GITHUB_TOKEN` and the standard `brew pr-pull` flow; it never
-checks out a PR branch or runs PR scripts/workflows with write credentials.
+uses the tap's `GITHUB_TOKEN` and standard `brew pr-pull`, which applies the
+selected PR and evaluates its formula Ruby with the write token. Automatic
+publication therefore trusts the App and tap writers; the manual path trusts
+the maintainer's review. PR workflows and auxiliary scripts are not executed.
 `--head-sha` verifies the selected commit again before bottle publication.
 
 Human and Dependabot PRs are never published automatically. After reviewing
@@ -34,6 +36,8 @@ The initial 0.3.0 PR uses this manual path. Manual workflow dispatch also accept
 a PR number and optional reviewed head SHA. Skipped formula builds fail checks;
 maintenance PRs with no formula changes need no bottles. `pr-pull` does not itself
 enforce the complete platform set, so the manual path needs that review.
+`pr-pull` closes published PRs; their branches can remain because automatic
+branch deletion applies to GitHub merges.
 
 Keep Homebrew's default publishing permissions: no PR-required/checks ruleset and
 no App bypass on `main`. A separate no-bypass rule blocks force-push and deletion
