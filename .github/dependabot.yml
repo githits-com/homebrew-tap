@@ -4,6 +4,9 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3 # zizmor: ignore[dependabot-cooldown] -- maintainer policy explicitly uses three days
+      include: ["*"]
     groups:
       github-actions:
         patterns:
