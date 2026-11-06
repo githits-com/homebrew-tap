@@ -17,7 +17,7 @@ jobs:
   test-bot:
     strategy:
       matrix:
-        os: [macos-15, macos-15-intel, ubuntu-24.04, ubuntu-24.04-arm]
+        os: [macos-15, ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     permissions:
       actions: read
@@ -37,6 +37,10 @@ jobs:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
           key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
           restore-keys: ${{ matrix.os }}-rubygems-
+
+      - name: Test publication selection
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 
       - run: brew test-bot --only-cleanup-before
 

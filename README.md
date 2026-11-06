@@ -6,27 +6,40 @@ Install [githits-scan](https://github.com/githits-com/githits-scan):
 brew install githits-com/tap/githits-scan
 ```
 
-Homebrew uses a matching bottle when available and otherwise builds from source
-with Homebrew's Rust build dependency. Bottle builds target macOS 15 Apple Silicon
-and Intel, and Linux x86_64 and ARM64. Intel macOS builds are currently blocked
-because Homebrew's Rust dependency has no compatible bottle: test-bot skips the
-formula, and this tap treats skips as failed checks. Do not publish until all
-required targets have a tested bottle.
+Bottles target macOS 15 Apple Silicon and Linux x86_64/ARM64. Other platforms,
+including Intel macOS, build from source with Homebrew's Rust build dependency.
+On Intel macOS that can also require building Rust and LLVM from source; this
+fallback is not exercised by the bottle CI matrix.
 
-## Maintenance
+## Release delivery
 
-Formula pull requests run `brew test-bot` on each target and retain bottles as
-workflow artifacts. After reviewing the PR and its successful checks, a maintainer
-applies the `pr-pull` label. The publish workflow checks the labeled head SHA,
-uploads bottles to this repository's GitHub Releases, and pushes the formula and
-bottle metadata to `main` using this tap's `GITHUB_TOKEN`. Do not merge formula PRs
-with GitHub's merge button before publishing their bottles.
+A tagged Scan release opens a formula version-update PR using the tap's GitHub
+App. The `brew test-bot` workflow builds and tests all three bottle targets.
+After it succeeds, the publisher runs automatically **only** when:
 
-The workflow can also be dispatched manually with the PR number and reviewed
-head SHA. Publication and merging require maintainer approval.
+- The PR author is `githits-homebrew-tap-bumper[bot]`.
+- The open PR targets `main` in this repository and still has the tested head SHA.
+- The only changed file is the modified `Formula/githits-scan.rb`.
 
-Scan's release workflow opens version-update PRs using a GitHub App installed
-only on this repository. Setup belongs to Scan's
+The publisher is triggered directly by `workflow_run`, not by a bot-applied
+label: labels written with `GITHUB_TOKEN` would not trigger another workflow.
+Selection uses read-only API calls and trusted `main` code. The publishing job
+uses the tap's `GITHUB_TOKEN` and the standard `brew pr-pull` flow; it never
+checks out a PR branch or runs PR scripts/workflows with write credentials.
+`--head-sha` verifies the selected commit again before bottle publication.
+
+Human and Dependabot PRs are never published automatically. After reviewing
+successful CI and all three bottle artifacts, a maintainer applies `pr-pull`.
+The initial 0.3.0 PR uses this manual path. Manual workflow dispatch also accepts
+a PR number and optional reviewed head SHA. Skipped formula builds fail checks;
+maintenance PRs with no formula changes need no bottles. `pr-pull` does not itself
+enforce the complete platform set, so the manual path needs that review.
+
+Keep Homebrew's default publishing permissions: no PR-required/checks ruleset and
+no App bypass on `main`. A separate no-bypass rule blocks force-push and deletion
+for everyone. No App key or publishing environment is needed in this tap. The
+App is used only by Scan's release workflow to open bump PRs; its variable and
+secret belong to Scan's `homebrew-tap` environment. See Scan's
 [release process](https://github.com/githits-com/githits-scan/blob/main/docs/implementation/release-process.md).
 There is no scheduled version updater in this tap.
 

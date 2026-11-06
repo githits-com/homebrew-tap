@@ -1,7 +1,10 @@
 # brew tap-new uses this file to generate a bottle publish workflow for the new tap
 name: brew pr-pull
 
-on:
+on: # zizmor: ignore[dangerous-triggers] -- main-only read job validates App/file/head; standard publisher runs no PR scripts
+  workflow_run:
+    workflows: [brew test-bot]
+    types: [completed]
   pull_request_target:
     types: [labeled]
   workflow_dispatch:
@@ -19,9 +22,33 @@ defaults:
     shell: bash -xeuo pipefail {0}
 
 jobs:
+  select-pr:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_target' && github.event.label.name == 'pr-pull') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      number: ${{ steps.select.outputs.number }}
+      sha: ${{ steps.select.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Select an eligible PR
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/select_publish_pr.py
+
   pr-pull:
-    # Only the default-branch workflow runs; pr-pull verifies the reviewed PR SHA.
-    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'pr-pull'
+    needs: select-pr
+    # The publisher uses trusted default-branch code, never PR scripts or workflows.
+    if: needs.select-pr.outputs.number != ''
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -47,8 +74,8 @@ jobs:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_GIT_COMMITTER_NAME: ${{ steps.git_setup.outputs.name }}
           HOMEBREW_GIT_COMMITTER_EMAIL: ${{ steps.git_setup.outputs.email }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || inputs.head_sha }}
-          PULL_REQUEST: ${{ github.event.pull_request.number || inputs.pull_request }}
+          HEAD_SHA: ${{ needs.select-pr.outputs.sha }}
+          PULL_REQUEST: ${{ needs.select-pr.outputs.number }}
         run: |
           if [[ -n "$HEAD_SHA" ]]
           then
